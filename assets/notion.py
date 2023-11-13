@@ -1,7 +1,10 @@
 import os
 import requests
+import json
+from datetime import datetime
+
 from dotenv import load_dotenv
-from .models import Category, Tag
+from .models import Category, Tag, InvestmentRecord
 from .utils import color_to_hex
 
 load_dotenv()
@@ -15,16 +18,73 @@ class NotionClient:
   def __str__(self):
     return f'NotionClient: {self.url}'
 
-  def fetch_data_from_notion(self):
-    headers = {
+  def __headers(self):
+    return {
       "Content-Type": "application/json",
       "Notion-Version": os.getenv('NOTION_API_VERSION'),
       "Authorization": f"Bearer {self.token}"
     }
 
-    response = requests.request("GET", self.url, headers=headers)
+  def fetch_meta_data_from_notion(self):
+    response = requests.request("GET", self.url, headers=self.__headers())
     data = response.json()
     return data
+
+  def fetch_raw_data_from_notion(self, start_cursor=None):
+    # page_size = 100
+    page_size = 5
+    payload = {
+      "page_size": page_size,
+      "sorts": [
+        {
+          "property": "Date",
+          "direction": "descending"
+        }
+      ],
+    }
+
+    if start_cursor:
+      payload['start_cursor'] = start_cursor
+
+    response = requests.request(
+      "POST",
+      self.url + '/query',
+      data=json.dumps(payload),
+      headers=self.__headers()
+
+    )
+    print(response.text)
+    data = response.json()
+    print(data)
+    return data
+
+  def create_or_update_investment_records(self, data):
+    for record in data['results']:
+      investment, created = InvestmentRecord.objects.get_or_create(
+        notionId=record['id'],
+        defaults={
+          "itemName": record['properties']['Item Name']['title'][0]['plain_text'],
+          "itemDescription": record['properties']['Comment']['rich_text'][0]['plain_text'] if record['properties']['Comment']['rich_text'] else "",
+          "category": Category.objects.get(notionId=record['properties']['Category']['select']['id']),
+          "date": record['properties']['Date']['date']['start'],
+          "amount": record['properties']['Amount']['number'],
+          "currency": record['properties']['Currency']['select']['name'] or 'VND',
+          "profitLoss": record['properties']['Profit/Loss']['number'] or 0,
+          "year": record['properties']['Year']['number'] or datetime.now().year
+        }
+      )
+
+      print(investment)
+
+      if not created:
+        investment.tags.clear()
+
+      tags = record['properties']['Tags']['multi_select']
+      for tag in tags:
+        investment.tags.add(Tag.objects.get(notionId=tag['id']))
+
+      investment.save()
+
 
   def create_or_update_categories(self, data):
     categories = data['properties']['Category']['select']['options']
@@ -39,7 +99,7 @@ class NotionClient:
         Category.objects.create(
           notionId=category['id'],
           name=category['name'],
-          color=category['color']
+          color=color_to_hex(category['color'])
         )
 
   def create_or_update_tags(self, data):
@@ -55,5 +115,5 @@ class NotionClient:
         Tag.objects.create(
           notionId=tag['id'],
           name=tag['name'],
-          color=tag['color']
+          color=color_to_hex(tag['color'])
         )
