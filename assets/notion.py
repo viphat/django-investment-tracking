@@ -49,6 +49,7 @@ class NotionClient:
     )
 
   def fetch_raw_data_by_paging_cursor(self, page_size=100, start_cursor=None):
+    # Có thể Filter theo Updated Time
     payload = {
       "page_size": page_size,
       "sorts": [
