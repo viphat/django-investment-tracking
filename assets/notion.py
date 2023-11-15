@@ -1,10 +1,10 @@
 import os
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
-from .models import Category, Tag, InvestmentRecord
+from .models import Category, Tag, InvestmentRecord, Report
 from .utils import color_to_hex
 
 load_dotenv()
@@ -30,9 +30,25 @@ class NotionClient:
     data = response.json()
     return data
 
-  def fetch_raw_data_from_notion(self, start_cursor=None):
-    # page_size = 100
-    page_size = 5
+  def fetch_raw_data_from_notion(self):
+    hasMore = True
+    start_cursor = None
+
+    while hasMore:
+      data = self.fetch_raw_data_by_paging_cursor(start_cursor=start_cursor)
+      self.create_or_update_investment_records(data)
+      hasMore = data['has_more']
+      start_cursor = data['next_cursor']
+
+    tzinfo = timezone(timedelta(hours=9))
+    Report.objects.update_or_create(
+      key='last_synced_at',
+      defaults={
+        "value": datetime.now(tzinfo).strftime("%Y-%m-%d %H:%M:%S")
+      }
+    )
+
+  def fetch_raw_data_by_paging_cursor(self, page_size=100, start_cursor=None):
     payload = {
       "page_size": page_size,
       "sorts": [
@@ -51,16 +67,18 @@ class NotionClient:
       self.url + '/query',
       data=json.dumps(payload),
       headers=self.__headers()
-
     )
-    print(response.text)
+
     data = response.json()
-    print(data)
+    # print(data)
     return data
 
   def create_or_update_investment_records(self, data):
+    tzinfo = timezone(timedelta(hours=9))
+    year = datetime.now(tzinfo).year
+
     for record in data['results']:
-      investment, created = InvestmentRecord.objects.get_or_create(
+      investment, created = InvestmentRecord.objects.update_or_create(
         notionId=record['id'],
         defaults={
           "itemName": record['properties']['Item Name']['title'][0]['plain_text'],
@@ -70,7 +88,7 @@ class NotionClient:
           "amount": record['properties']['Amount']['number'],
           "currency": record['properties']['Currency']['select']['name'] or 'VND',
           "profitLoss": record['properties']['Profit/Loss']['number'] or 0,
-          "year": record['properties']['Year']['number'] or datetime.now().year
+          "year": record['properties']['Year']['number'] or year
         }
       )
 

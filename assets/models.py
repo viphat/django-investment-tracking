@@ -24,13 +24,16 @@ class InvestmentRecord(models.Model):
   tags = models.ManyToManyField(Tag)
   date = models.DateField(blank=False, null=False)
   currency = models.CharField(max_length=3, blank=False, null=False)
-  amount = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
-  profitLoss = models.DecimalField(max_digits=10, decimal_places=2)
+  amount = models.DecimalField(max_digits=15, decimal_places=2, blank=False, null=False)
+  profitLoss = models.DecimalField(max_digits=15, decimal_places=2)
   year = models.IntegerField(blank=False, null=False)
 
   def __str__(self):
     return "{p1}: {p2}".format(p1=self.itemName, p2=self.amount)
 
 class Report(models.Model):
-  key = models.CharField(max_length=255, blank=False, null=False)
-  value = models.DecimalField(max_digits=10, decimal_places=2, blank=False, null=False)
+  key = models.CharField(max_length=255, blank=False, null=False, unique=True)
+  value = models.TextField(blank=False, null=False)
+
+  def __str__(self):
+    return "{p1}: {p2}".format(p1=self.key, p2=self.value)
