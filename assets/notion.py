@@ -33,12 +33,19 @@ class NotionClient:
   def fetch_raw_data_from_notion(self):
     hasMore = True
     start_cursor = None
+    notion_record_ids = []
 
     while hasMore:
       data = self.fetch_raw_data_by_paging_cursor(start_cursor=start_cursor)
+      for record in data['results']:
+        notion_record_ids.append(record['id'])
+
       self.create_or_update_investment_records(data)
       hasMore = data['has_more']
       start_cursor = data['next_cursor']
+
+    # Delete InvestmentRecord objects that are not in notion_record_ids
+    InvestmentRecord.objects.exclude(notionId__in=notion_record_ids).delete()
 
     tzinfo = timezone(timedelta(hours=9))
     Report.objects.update_or_create(

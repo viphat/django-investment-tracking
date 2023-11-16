@@ -1,6 +1,7 @@
 import os
 import requests
 
+from decimal import Decimal
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from .models import Report
@@ -21,6 +22,9 @@ class JPYVNDRate:
     return data
 
   def get_jpy_vnd_rate(self):
+    return Decimal(Report.objects.get(key='jpy_vnd_rate').value)
+
+  def update_jpy_vnd_rate(self):
     data = self.fetch()
     rate = round(data['rates']['VND'] / data['rates']['JPY'], 2)
 
