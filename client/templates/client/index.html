@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+{% load static %}
+
+<head>
+  <title>Dương Đào Family - Quản Lý Gia Sản (Web Báo Cáo)</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="{% static "client/css/output.css" %}">
+  <link rel="icon" href="{% static "client/images/favicon.png" %}" type="image/png">
+</head>
+
+<body>
+  <div id="app" class="container mx-auto px-4 py-8">
+    <h1 class="text-xl text-red-500 w-full text-center">Dương Đào Family - Quản Lý Gia Sản (Web Báo Cáo)</h1>
+    <div class="my-4 w-full flex items-center justify-center">
+      <img class="mt-4" src="{% static "client/images/logo.png" %}" alt="Dương Đào Family" width="200px">
+    </div>
+
+    <div class="mt-4 w-full">
+      <div class="flex flex-row w-full">
+        <label class="block text-orange-500 w-[300px]">Đồng bộ dữ liệu:</label>
+        <div class="pl-4 text-red-700">{{ data.last_synced_at }}</div>
+      </div>
+
+      <div class="flex flex-row w-full">
+        <label class="block text-orange-500 w-[300px]">Tổng giá trị tài sản:</label>
+        <div class="pl-4 text-red-700">{{ data.total_amount }}</div>
+      </div>
+
+      <div class="my-4 flex flex-row w-full">
+        <form method="POST" action="{% url 'client:update' %}">
+          {% csrf_token %}
+          <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md">
+            Cập nhật dữ liệu từ Notion
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="mt-12 w-full">
+      <div id="chartContainer"></div>
+    </div>
+
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script>
+      chartData = {{data.chart_data | safe}}
+
+      Highcharts.chart('chartContainer', {
+        title: {
+          text: 'Summary'
+        },
+        chart: {
+          type: 'pie',
+          plotBackgroundColor: null,
+          plotBorderWidth: null,
+          plotShadow: false,
+        },
+        tooltip: {
+          pointFormat: '<strong>{point.percentage:.1f}%</strong> ~ {point.formattedValue}'
+        },
+        plotOptions: {
+          pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: {
+              enabled: true,
+              format: '<strong>{point.name}</strong>: {point.percentage:.1f} %'
+            }
+          }
+        },
+        series: [{
+          name: 'Categories',
+          colorByPoint: true,
+          data: chartData
+        }],
+      })
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+  </div>
+</body>

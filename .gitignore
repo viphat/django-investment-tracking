@@ -63,3 +63,6 @@ coverage.xml
 # Log files
 *.log
 
+# Node
+node_modules/
+package-lock.json

@@ -19,21 +19,24 @@ class ReportApiView(APIView):
       ),
     }
 
-    categories = Category.objects.all()
-    for category in categories:
-      data.update({
-        f"{category.name}": {
-          "value": vnd_currency_format.format(
-            Decimal(Report.objects.get(key=f'total_amount_in_vnd_by_category_{category.id}').value)
-          ),
-          "percent": round(
-            Decimal(Report.objects.get(key=f'total_amount_in_vnd_by_category_{category.id}').value) /
-            Decimal(Report.objects.get(key='total_amount_in_vnd').value) * 100, 2
-          )
-        }
+    categories = []
+
+    for category in Category.objects.all():
+      categories.append({
+        "name": category.name,
+        "value": Decimal(Report.objects.get(key=f'total_amount_in_vnd_by_category_{category.id}').value),
+        "formattedValue": vnd_currency_format.format(
+          Decimal(Report.objects.get(key=f'total_amount_in_vnd_by_category_{category.id}').value)
+        ),
+        "percentage": round(
+          Decimal(Report.objects.get(key=f'total_amount_in_vnd_by_category_{category.id}').value) /
+          Decimal(Report.objects.get(key='total_amount_in_vnd').value) * 100, 2
+        ),
+        "color": category.color,
       })
 
     data.update({
+      "categories": categories,
       "last_synced_at": Report.objects.get(key='last_synced_at').value,
       "last_jpy_vnd_rate_updated_at": Report.objects.get(key='last_jpy_vnd_rate_updated_at').value,
       "last_report_updated_at": Report.objects.get(key='last_report_updated_at').value,
