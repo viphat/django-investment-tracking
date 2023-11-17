@@ -31,6 +31,15 @@ class InvestmentRecord(models.Model):
   def __str__(self):
     return "{p1}: {p2}".format(p1=self.itemName, p2=self.amount)
 
+  def formatted_amount(self):
+    return "{:,} {p1}".format(self.amount, p1=self.currency)
+
+  def formatted_profit_loss(self):
+    if self.profitLoss == 0.0:
+      return ""
+
+    return "{:,} {p1}".format(self.profitLoss, p1=self.currency)
+
 class Report(models.Model):
   key = models.CharField(max_length=255, blank=False, null=False, unique=True)
   value = models.TextField(blank=False, null=False)
