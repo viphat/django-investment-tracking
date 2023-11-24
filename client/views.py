@@ -43,3 +43,19 @@ def update(request):
 
   # redirect to index page
   return redirect('client:index')
+
+def sync(request):
+  url = f"{request.build_absolute_uri('/')}api/report"
+  payload = {
+    "incremental_update": True
+  }
+
+  requests.request(
+    "POST",
+    url,
+    data=json.dumps(payload),
+    headers=headers
+  )
+
+  # redirect to index page
+  return redirect('client:index')

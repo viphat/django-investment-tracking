@@ -49,7 +49,9 @@ class ReportApiView(APIView):
     meta_data = notion_client.fetch_meta_data_from_notion()
     notion_client.create_or_update_categories(meta_data)
     notion_client.create_or_update_tags(meta_data)
-    notion_client.fetch_raw_data_from_notion()
+    incremental_update = request.data.get('incremental_update')
+    notion_client.fetch_raw_data_from_notion(incremental_update)
+
     currency_rate = JPYVNDRate()
     currency_rate.update_jpy_vnd_rate()
     report_service = ReportService()

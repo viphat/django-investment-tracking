@@ -58,5 +58,4 @@ class ReportService:
       }
     )
 
-    print(output)
     return output

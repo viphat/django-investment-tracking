@@ -30,13 +30,13 @@ class NotionClient:
     data = response.json()
     return data
 
-  def fetch_raw_data_from_notion(self):
+  def fetch_raw_data_from_notion(self, incremental_update=False):
     hasMore = True
     start_cursor = None
     notion_record_ids = []
 
     while hasMore:
-      data = self.fetch_raw_data_by_paging_cursor(start_cursor=start_cursor)
+      data = self.fetch_raw_data_by_paging_cursor(start_cursor=start_cursor, incremental_update=incremental_update)
       for record in data['results']:
         notion_record_ids.append(record['id'])
 
@@ -45,7 +45,8 @@ class NotionClient:
       start_cursor = data['next_cursor']
 
     # Delete InvestmentRecord objects that are not in notion_record_ids
-    InvestmentRecord.objects.exclude(notionId__in=notion_record_ids).delete()
+    if incremental_update == False:
+      InvestmentRecord.objects.exclude(notionId__in=notion_record_ids).delete()
 
     tzinfo = timezone(timedelta(hours=9))
     Report.objects.update_or_create(
@@ -55,7 +56,7 @@ class NotionClient:
       }
     )
 
-  def fetch_raw_data_by_paging_cursor(self, page_size=100, start_cursor=None):
+  def fetch_raw_data_by_paging_cursor(self, page_size=100, start_cursor=None, incremental_update=False):
     # Có thể Filter theo Updated Time
     payload = {
       "page_size": page_size,
@@ -66,6 +67,16 @@ class NotionClient:
         }
       ],
     }
+
+    if incremental_update:
+      last_synced_at = Report.objects.get(key='last_synced_at').value
+
+      payload['filter'] = {
+        "timestamp": "last_edited_time",
+        "last_edited_time": {
+          "on_or_after": datetime.strptime(last_synced_at, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d")
+        }
+      }
 
     if start_cursor:
       payload['start_cursor'] = start_cursor
@@ -78,7 +89,6 @@ class NotionClient:
     )
 
     data = response.json()
-    # print(data)
     return data
 
   def create_or_update_investment_records(self, data):
@@ -99,8 +109,6 @@ class NotionClient:
           "year": record['properties']['Year']['number'] or year
         }
       )
-
-      print(investment)
 
       if not created:
         investment.tags.clear()
