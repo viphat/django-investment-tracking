@@ -1,4 +1,3 @@
-from decimal import Decimal
 from datetime import datetime, timezone, timedelta
 from .models import Category, InvestmentRecord, Report
 from .jpy_vnd_rate import JPYVNDRate
