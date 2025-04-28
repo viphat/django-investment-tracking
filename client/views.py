@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 import requests
 import json
 
-api_key = "lm4OEj58.DViOKg0gSHE9AHMfSAIDQzRtzX5SBUft"
+api_key = "eQ8SkA37.FprfStrsNLkkSTp6evVNimy5bwrxjqhK"
 headers = {
   "Content-Type": "application/json",
   "Authorization": f"Api-Key {api_key}"
